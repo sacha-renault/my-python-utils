@@ -1,5 +1,5 @@
 import os
-from typing import List, Union, Callable, Any, Generator
+from typing import List, Union, Callable, Any, Generator, Tuple
 
 def get_all_files(path: str, *, 
                   extension: Union[str, List[str], None] = None, 
@@ -65,3 +65,65 @@ def batch_file_loader(files: list,
         start_index = i * batch_size
         batch = [open_file_func(files[j]) for j in range(start_index, min(start_index + batch_size, files_length))]
         yield batch
+
+
+def _display_folder_structure(path: str, 
+                              max_depth: int, 
+                              depth: int = 0, 
+                              prefix: str = "") -> None:
+    """
+    Hidden helper function to recursively display the folder structure in a tree-like format.
+
+    Args:
+        path (str): The current directory path.
+        max_depth (int): The maximum depth to display in the tree.
+        depth (int): The current depth level (used internally for recursion).
+        prefix (str): The prefix for the current depth level, used to draw the tree structure.
+    """
+    # Get the list of entries in the directory, sorted for consistent order
+    entries = sorted(os.listdir(path))
+    num_entries = len(entries)
+
+    # Iterate through the entries
+    for i, entry in enumerate(entries):
+        sub_element = os.path.join(path, entry)
+        is_last = i == num_entries - 1
+
+        # Use appropriate branch characters
+        if is_last:
+            connector = "└── "
+            new_prefix = prefix + "    "
+        else:
+            connector = "├── "
+            new_prefix = prefix + "│   "
+
+        # Print the current directory or file
+        disp = prefix + connector + entry 
+        if os.path.isdir(sub_element):
+            disp += "/"
+        print(disp)
+
+        # If it's a directory, recurse into it
+        if os.path.isdir(sub_element) and (max_depth == -1 or depth < max_depth):
+            _display_folder_structure(sub_element, max_depth, depth=depth + 1, prefix=new_prefix)
+
+
+def display_folder_structure(path: str = ".", max_depth: int = -1) -> None:
+    """
+    Display the folder structure of a directory in a tree-like format.
+
+    Args:
+        path (str): The root directory path to start displaying the structure. Defaults to the current directory (".").
+        max_depth (int): The maximum depth to display in the tree. Defaults to -1 (no limit).
+    """
+    # Ensure the path exists and is a directory
+    if not os.path.exists(path):
+        raise ValueError(f"Path '{path}' does not exist.")
+    if not os.path.isdir(path):
+        raise ValueError(f"Path '{path}' is not a directory.")
+    
+    # print the base path 
+    print(os.path.basename(os.path.abspath(path)) + "/")
+
+    # Start the recursive display with an empty prefix and depth 0
+    _display_folder_structure(path, max_depth, depth=0, prefix="")        
