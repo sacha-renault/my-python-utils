@@ -69,8 +69,8 @@ def batch_file_loader(files: list,
 
 def _display_folder_structure(path: str, 
                               max_depth: int, 
-                              depth: int = 0, 
-                              prefix: str = "") -> None:
+                              depth: int, 
+                              prefix: str) -> None:
     """
     Hidden helper function to recursively display the folder structure in a tree-like format.
 
@@ -87,7 +87,7 @@ def _display_folder_structure(path: str,
     # Iterate through the entries
     for i, entry in enumerate(entries):
         sub_element = os.path.join(path, entry)
-        is_last = i == num_entries - 1
+        is_last = (i == num_entries - 1)
 
         # Use appropriate branch characters
         if is_last:
