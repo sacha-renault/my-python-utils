@@ -138,4 +138,4 @@ def get_folder_structure(path: str = ".", max_depth: int = -1, bypass: List[str]
     
     # Recursively build the folder structure
     folder_structure.extend(_get_folder_structure(path_obj, max_depth, 0, "", bypass))
-    return '\n'.join(folder_structure)     
+    return '\n'.join(folder_structure)
