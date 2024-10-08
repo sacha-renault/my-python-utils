@@ -70,7 +70,8 @@ def batch_file_loader(files: list,
 def _display_folder_structure(path: str, 
                               max_depth: int, 
                               depth: int, 
-                              prefix: str) -> None:
+                              prefix: str,
+                              bypass: List[str]) -> None:
     """
     Hidden helper function to recursively display the folder structure in a tree-like format.
 
@@ -86,6 +87,9 @@ def _display_folder_structure(path: str,
 
     # Iterate through the entries
     for i, entry in enumerate(entries):
+        if entry in bypass:
+            continue # skip loop 
+
         sub_element = os.path.join(path, entry)
         is_last = (i == num_entries - 1)
 
@@ -104,11 +108,11 @@ def _display_folder_structure(path: str,
         print(disp)
 
         # If it's a directory, recurse into it
-        if os.path.isdir(sub_element) and (max_depth == -1 or depth < max_depth):
-            _display_folder_structure(sub_element, max_depth, depth=depth + 1, prefix=new_prefix)
+        if (os.path.isdir(sub_element) and (max_depth == -1 or depth < max_depth)):
+            _display_folder_structure(sub_element, max_depth, depth=depth + 1, prefix=new_prefix, bypass=bypass)
 
 
-def display_folder_structure(path: str = ".", max_depth: int = -1) -> None:
+def display_folder_structure(path: str = ".", max_depth: int = -1, bypass: List[str] = None) -> None:
     """
     Display the folder structure of a directory in a tree-like format.
 
@@ -125,5 +129,9 @@ def display_folder_structure(path: str = ".", max_depth: int = -1) -> None:
     # print the base path 
     print(os.path.basename(os.path.abspath(path)) + "/")
 
+    # if bypass is None, we make an empty list
+    if bypass is None:
+        bypass = []
+
     # Start the recursive display with an empty prefix and depth 0
-    _display_folder_structure(path, max_depth, depth=0, prefix="")        
+    _display_folder_structure(path, max_depth, depth=0, prefix="", bypass=bypass)        
