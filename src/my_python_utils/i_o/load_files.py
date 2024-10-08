@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import List, Union, Callable, Any, Generator, Tuple
 
 def get_all_files(path: str, *, 
@@ -67,71 +68,74 @@ def batch_file_loader(files: list,
         yield batch
 
 
-def _display_folder_structure(path: str, 
-                              max_depth: int, 
-                              depth: int, 
-                              prefix: str,
-                              bypass: List[str]) -> None:
+def _get_folder_structure(
+    path: Path, 
+    max_depth: int, 
+    depth: int, 
+    prefix: str,
+    bypass: List[str]
+) -> List[str]:
     """
-    Hidden helper function to recursively display the folder structure in a tree-like format.
+    Recursively display the folder structure in a tree-like format.
 
     Args:
-        path (str): The current directory path.
+        path (Path): The current directory path.
         max_depth (int): The maximum depth to display in the tree.
         depth (int): The current depth level (used internally for recursion).
         prefix (str): The prefix for the current depth level, used to draw the tree structure.
+        bypass (List[str]): List of directories/files to bypass.
+
+    Returns:
+        List[str]: A list representing the folder structure.
     """
-    # Get the list of entries in the directory, sorted for consistent order
-    entries = sorted(os.listdir(path))
+    folder_structure = []
+
+    try:
+        entries = sorted([entry for entry in path.iterdir() if entry.name not in bypass])
+    except PermissionError:
+        folder_structure.append(f"{prefix}Permission denied: {path}")
+        return folder_structure
+
     num_entries = len(entries)
-
-    # Iterate through the entries
     for i, entry in enumerate(entries):
-        if entry in bypass:
-            continue # skip loop 
-
-        sub_element = os.path.join(path, entry)
         is_last = (i == num_entries - 1)
 
-        # Use appropriate branch characters
-        if is_last:
-            connector = "└── "
-            new_prefix = prefix + "    "
-        else:
-            connector = "├── "
-            new_prefix = prefix + "│   "
+        connector = "└── " if is_last else "├── "
+        new_prefix = prefix + ("    " if is_last else "│   ")
 
-        # Print the current directory or file
-        disp = prefix + connector + entry 
-        if os.path.isdir(sub_element):
-            disp += "/"
-        print(disp)
+        folder_structure.append(f"{prefix}{connector}{entry.name}/" if entry.is_dir() else f"{prefix}{connector}{entry.name}")
 
-        # If it's a directory, recurse into it
-        if (os.path.isdir(sub_element) and (max_depth == -1 or depth < max_depth)):
-            _display_folder_structure(sub_element, max_depth, depth=depth + 1, prefix=new_prefix, bypass=bypass)
+        if entry.is_dir() and (max_depth == -1 or depth < max_depth):
+            folder_structure.extend(_get_folder_structure(entry, max_depth, depth + 1, new_prefix, bypass))
+
+    return folder_structure
 
 
-def display_folder_structure(path: str = ".", max_depth: int = -1, bypass: List[str] = None) -> None:
+def get_folder_structure(path: str = ".", max_depth: int = -1, bypass: List[str] = None) -> str:
     """
     Display the folder structure of a directory in a tree-like format.
 
     Args:
         path (str): The root directory path to start displaying the structure. Defaults to the current directory (".").
         max_depth (int): The maximum depth to display in the tree. Defaults to -1 (no limit).
+        bypass (List[str]): List of directories/files to bypass.
+    
+    Returns:
+        str: The folder structure formatted as a tree.
     """
-    # Ensure the path exists and is a directory
-    if not os.path.exists(path):
+    path_obj = Path(path)
+
+    if not path_obj.exists():
         raise ValueError(f"Path '{path}' does not exist.")
-    if not os.path.isdir(path):
+    if not path_obj.is_dir():
         raise ValueError(f"Path '{path}' is not a directory.")
     
-    # print the base path 
-    print(os.path.basename(os.path.abspath(path)) + "/")
-
-    # if bypass is None, we make an empty list
     if bypass is None:
         bypass = []
 
-    # Start the recursive display with an empty prefix and depth 0
-    _display_folder_structure(path, max_depth, depth=0, prefix="", bypass=bypass)        
+    # Initialize the folder structure with the base directory
+    folder_structure = [f"{path_obj.resolve().name}/"]
+    
+    # Recursively build the folder structure
+    folder_structure.extend(_get_folder_structure(path_obj, max_depth, 0, "", bypass))
+    return '\n'.join(folder_structure)     
